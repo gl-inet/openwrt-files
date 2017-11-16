@@ -1,0 +1,40 @@
+config interface 'loopback'
+    option ifname 'lo'
+    option proto 'static'
+    option ipaddr '127.0.0.1'
+    option netmask '255.0.0.0'
+
+config interface 'tor'
+    option ifname 'eth1 wlan0'
+    option type 'bridge'
+    option proto 'static'
+    option ipaddr '172.16.1.1'
+    option netmask '255.255.255.0'
+
+
+config interface 'wan'
+    option ifname 'eth0'
+    option proto 'dhcp'
+
+config interface 'wwan'
+    option ifname 'eth2'
+    option proto 'dhcp'
+
+config interface '3g_modem_USB0'
+    option proto '3g'
+    option service 'umts'
+    option apn 'internet'
+    option device '/dev/ttyUSB0'
+
+config interface '3g_modem_USB1'
+    option proto '3g'
+    option service 'umts'
+    option apn 'internet'
+    option device '/dev/ttyUSB1'
+
+config interface '3g_modem_USB2'
+    option proto '3g'
+    option service 'umts'
+    option apn 'internet'
+    option device '/dev/ttyUSB2'
+

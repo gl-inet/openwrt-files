@@ -1,0 +1,17 @@
+config wifi-device 'radio0'
+	option type 'mac80211'
+	option path 'platform/qca953x_wmac'
+	option htmode 'HT20'
+	option hwmode '11ng'
+	option txpower '20'
+	option channel 'auto'
+
+config wifi-iface
+	option device 'radio0'
+	option network 'lan'
+	option mode 'ap'
+	option ssid 'PORTAL'
+	option encryption 'psk-mixed'
+	option key 'goodlife'
+	option ifname 'wlan0'
+	option wds '1'
