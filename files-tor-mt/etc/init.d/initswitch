@@ -1,0 +1,50 @@
+#!/bin/sh /etc/rc.common
+
+START=19
+
+start(){
+
+	model=$(awk 'BEGIN{FS="-"} /machine/ {print tolower($2)}' /proc/cpuinfo)
+	switch_left=
+	switch_disabled="0"
+
+	case "$model" in
+		"ar150")
+			switch_left=$(grep -o "BTN_8.*hi" /sys/kernel/debug/gpio)
+			;;
+		"ar300m")
+			switch_left=$(grep -o "button left.*hi" /sys/kernel/debug/gpio)
+			;;
+		"mt300a")
+			switch_left=$(grep -o "BTN_1.*hi" /sys/kernel/debug/gpio)
+			;;
+		"mt300n")
+			switch_left=$(grep -o "BTN_0.*hi" /sys/kernel/debug/gpio)
+			;;
+		"connect inet v1" | \
+		"ar300" | \
+		"mt750" )
+			switch_disabled="1"
+		;;
+	esac
+
+	#if switch is on 0
+	if [ "$switch_disabled" = "1" ]; then
+		exit 0
+	fi
+
+	if [ -n "$switch_left" ]; then
+		uci set firewall.internet.src='nothing'
+		uci set glconfig.tor.disabled='0'
+		uci set firewall.tor.input='REJECT'
+	else
+		uci set firewall.internet.src='tor'
+		uci set glconfig.tor.disabled='1'
+		uci set firewall.tor.input='ACCEPT'
+	fi
+
+	uci commit glconfig
+	uci commit firewall
+	uci commit system
+	/etc/init.d/firewall restart
+}

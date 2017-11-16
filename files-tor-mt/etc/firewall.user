@@ -1,0 +1,17 @@
+enable_transparent_tor() {
+
+	ifname=br-lan
+
+	# Allow direct access to the Tor daemon
+	iptables -t nat -A PREROUTING -i $ifname -p tcp --dport 9050 -j ACCEPT
+
+	# provide transparent routing for TCP and DNS
+	iptables -t nat -A PREROUTING -i $ifname -p udp --dport 53 -j REDIRECT --to-ports 9053
+	iptables -t nat -A PREROUTING -i $ifname -p tcp --syn -j REDIRECT --to-ports 9040
+}
+
+disabled=$(uci get glconfig.tor.disabled)
+
+if [ "$disabled" != "1" ]; then
+    enable_transparent_tor
+fi

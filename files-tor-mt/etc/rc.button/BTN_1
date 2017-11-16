@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#used for MT300A, AR300M switch, left released
+
+echo "$BUTTON ${ACTION}" > /dev/console
+"${ACTION}" = "pressed"
+
+is_left(){
+	model=$(awk 'BEGIN{FS="-"} /machine/ {print tolower($2)}' /proc/cpuinfo)
+	switch_left=
+	case "$model" in
+	"ar150" | \
+	"ar300m")
+		[ "$ACTION" = "pressed" ] && {
+			switch_left="yes"
+		}
+		;;
+	"mt300n" | \
+	"mt300a")
+		[ "$ACTION" = "released" ] && {
+			switch_left="yes"
+		}
+		;;
+	"connect inet v1" | \
+	"ar300" | \
+	"mt750" )
+		switch_disabled="1"
+		;;
+	esac
+	echo "$switch_left"
+}
+
+if [ -z "$(is_left)" ]; then
+	uci set firewall.tor.input='ACCEPT'
+	uci set glconfig.tor.disabled='1'
+	uci set firewall.internet.src='tor'
+else
+	uci set firewall.tor.input='REJECT'
+	uci set glconfig.tor.disabled='0'
+	uci set firewall.internet.src='nothing'
+fi
+
+uci commit glconfig
+uci commit firewall
+/etc/init.d/firewall restart

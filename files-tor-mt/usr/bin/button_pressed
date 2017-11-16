@@ -1,0 +1,80 @@
+#!/bin/sh
+
+model=$(awk 'BEGIN{FS="-"} /machine/ {print tolower($2)}' /proc/cpuinfo)
+if [ "$model" = "connect inet v1" ]; then
+	model="6416"
+fi
+led=
+case "$model" in
+	"ar300")
+		led="/sys/class/leds/gl_ar300:lan/brightness"
+		;;
+	"ar300m")
+		led="/sys/class/leds/gl-ar300m:lan/brightness"
+		;;
+	"ar150")
+		led="/sys/class/leds/gl_ar150:lan/brightness"
+		;;
+	"mifi")
+		led="/sys/class/leds/gl_mifi:lan/brightness"
+		;;
+	"6416")
+		led="/sys/class/leds/gl-inet:lan/brightness"
+		;;
+	"mt300a")
+		led="/sys/class/leds/gl-mt300a:wan/brightness"
+		;;
+	"mt300n")
+		led="/sys/class/leds/gl-mt300n:wan/brightness"
+		;;
+	"mt750")
+		led="/sys/class/leds/gl-mt750:wan/brightness"
+		;;
+	*)
+esac
+
+reset_pressed_start=$(date +%s)
+reset_pressed_duration=0
+echo "$reset_pressed_duration" > /tmp/reset_pressed_duration
+while [ true ]; do
+	now=$(date +%s)
+	reset_pressed_duration=$((now-reset_pressed_start))
+	echo "$reset_pressed_duration" > /tmp/reset_pressed_duration
+	#echo "$reset_pressed_duration" > /dev/console
+
+	#flash leds
+	if [ "$reset_pressed_duration" -gt 20 ]; then
+		sleep 1
+	elif [ "$reset_pressed_duration" -gt 8 ]; then
+		echo 1 > $led
+		sleep 0.1
+		echo 0 > $led
+		sleep 0.1
+		echo 1 > $led
+		sleep 0.1
+		echo 0 > $led
+		sleep 0.1
+		echo 1 > $led
+		sleep 0.1
+		echo 0 > $led
+		sleep 0.1
+		echo 1 > $led
+		sleep 0.1
+		echo 0 > $led
+		sleep 0.1
+	elif [ "$reset_pressed_duration" -gt 3 ]; then
+		echo 1 > $led
+		sleep 0.25
+		echo 0 > $led
+		sleep 0.25
+	else
+		echo 1 > $led
+		sleep 0.5
+		echo 0 > $led
+		sleep 0.5
+	fi
+
+done
+
+
+

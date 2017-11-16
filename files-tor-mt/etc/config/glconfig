@@ -1,0 +1,6 @@
+
+config tor 'tor'
+	option disabled '0'
+
+config service 'general'
+	option macoption 'factory'

@@ -1,0 +1,73 @@
+#!/bin/sh
+
+model=$(awk 'BEGIN{FS="-"} /machine/ {print tolower($2)}' /proc/cpuinfo)
+if [ "$model" = "connect inet v1" ]; then
+	model="6416"
+fi
+led=
+wan_eth="eth0"
+case "$model" in
+	"ar300")
+		led="/sys/class/leds/gl_ar300:lan/brightness"
+		;;
+	"ar300m")
+		led="/sys/class/leds/gl-ar300m:lan/brightness"
+		;;
+	"ar150")
+		led="/sys/class/leds/gl_ar150:lan/brightness"
+		;;
+	"mifi")
+		led="/sys/class/leds/gl_mifi:lan/brightness"
+		;;
+	"6416")
+		led="/sys/class/leds/gl-inet:lan/brightness"
+		;;
+	"mt300a")
+		wan_eth="eth0.2"
+		led="/sys/class/leds/gl-mt300a:wan/brightness"
+		;;
+	"mt300n")
+		wan_eth="eth0.2"
+		led="/sys/class/leds/gl-mt300n:wan/brightness"
+		;;
+	"mt750")
+		wan_eth="eth0.2"
+		led="/sys/class/leds/gl-mt750:wan/brightness"
+		;;
+	*)
+esac
+
+killall -9 button_pressed
+echo 0 > $led
+reset_pressed_duration=$(cat /tmp/reset_pressed_duration)
+
+factory_reset(){
+	echo "FACTORY RESET" > /dev/console
+	/usr/bin/flashleds &
+	jffs2reset -y && reboot &
+}
+
+reset_network(){
+	echo "Now resetting network" > /dev/console
+	uci set glconfig.repeater.autoconnect='0'
+	uci set network.wan.ifname="$wan_eth"
+	uci set network.lan.proto='static'
+	uci set network.lan.ipaddr='192.168.8.1'
+	uci set dhcp.lan.ignore='0'
+	uci set wireless.radio0.disabled='0'
+	uci set wireless.wifi-iface[0].disabled='0'
+	uci set wireless.sta.disabled='1'
+	uci commit
+	/etc/init.d/network restart
+	/etc/init.d/dnsmasq restart
+}
+
+if [ "$reset_pressed_duration" -gt 20 ]; then
+	echo 'Reset action cancelled' > /dev/console
+elif [ "$reset_pressed_duration" -gt 8 ]; then
+	factory_reset
+elif [ "$reset_pressed_duration" -gt 3 ]; then
+	reset_network
+else
+	change_tor_node
+fi
