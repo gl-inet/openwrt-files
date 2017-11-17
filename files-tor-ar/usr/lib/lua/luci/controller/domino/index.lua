@@ -457,6 +457,11 @@ function download_firmware_online()
 
 		elseif model == "ar300" then
 
+		elseif model == "ar300m" then
+			local nand=luci.util.exec("cat /proc/mounts |grep 'ubi0_1.*overlay'")
+			if nand then
+				model = model .. "/nand"
+			end
 		else --domino
 
 		end
@@ -518,13 +523,18 @@ function get_firmware_online()
 
 	elseif model == "ar300" then
 
+	elseif model == "ar300m" then
+		local nand=luci.util.exec("cat /proc/mounts |grep 'ubi0_1.*overlay'")
+		if nand then
+			model = model .. "/nand"
+		end
 	else --domino
 
 	end
 	local url
 	local firmware
 	url="http://www.gl-inet.com/firmware/"..model.."/tor/"
-	local info=luci.util.exec("wget " ..url.."list.txt -O -");
+	local info=luci.util.exec("wget " ..url.."list.txt -O -")
 	if info then
 		local words=string.gmatch(info,"%S+")
 		if words then
