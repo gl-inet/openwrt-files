@@ -459,7 +459,7 @@ function download_firmware_online()
 
 		elseif model == "ar300m" then
 			local nand=luci.util.exec("cat /proc/mounts |grep 'ubi0_1.*overlay'")
-			if nand then
+			if not_nil_or_empty(nand) then
 				model = model .. "/nand"
 			end
 		else --domino
@@ -525,7 +525,7 @@ function get_firmware_online()
 
 	elseif model == "ar300m" then
 		local nand=luci.util.exec("cat /proc/mounts |grep 'ubi0_1.*overlay'")
-		if nand then
+		if not_nil_or_empty(nand) then
 			model = model .. "/nand"
 		end
 	else --domino
