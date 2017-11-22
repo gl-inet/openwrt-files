@@ -461,10 +461,11 @@ function download_firmware_online()
 		else --domino
 
 		end
-		url="www.gl-inet.com/firmware/"..model.."/tor/"
+		url="http://www.gl-inet.com/firmware/"..model.."/tor/"
 
 		--luci.http.write("v:"..version..", md5:" .. md5 ..", file:" .. file .. ", size:" .. size)
 		--luci.http.write("wget " ..url..file.." -O /tmp/firmware.bin.tmp && mv /tmp/firmware.bin.tmp /tmp/firmware.bin")
+
 		fork_exec("wget " ..url..file.." -O /tmp/firmware.bin.tmp && mv /tmp/firmware.bin.tmp /tmp/firmware.bin");
 	else
 		local size_downloaded=nixio.fs.stat("/tmp/firmware.bin.tmp","size");
@@ -1003,7 +1004,7 @@ function network_post()
 	--local params = decrypt_pgp_message()
 	local wan_eth="eth0"
 	local model
-	model=luci.util.exec("awk 'BEGIN{FS=\" |-\"} /machine/ {print tolower($NF)}' /proc/cpuinfo")
+	model=luci.util.exec("awk -F': ' '/machine/ {print tolower($NF)}' /proc/cpuinfo| cut -d- -f2-")
 	model=string.gsub(model, "\n", "")
 	if model == "v1" then
 		model = "6416"
