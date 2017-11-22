@@ -1,0 +1,34 @@
+#!/bin/sh
+
+#flash the WAN and wlan LEDS, mainly used when upgrading firmware
+
+model=$(awk -F': ' '/machine/ {print tolower($NF)}' /proc/cpuinfo| cut -d- -f2-)
+led1=
+led2=
+if [ "$model" = "v1" ]; then
+	model="6416"
+	led1="gl-connect:green:lan"
+	led2="gl-connect:red:wlan"
+elif [ "$model" = "ar150" ]; then
+	led1="gl_ar150:wan"
+	led2="gl_ar150:wlan"
+elif [ "$model" = "ar300" ]; then
+	led1="gl_ar300:wan"
+	led2="gl_ar300:wlan"
+elif [ "$model" = "domino" ]; then
+	led1="domino:red:wan"
+	led2="domino:blue:wlan"
+fi
+
+i=1
+while [ "$i" -le 100 ]
+do
+	echo 1 > /sys/class/leds/$led1/brightness
+	echo 0 > /sys/class/leds/$led2/brightness
+	sleep 0.2
+	echo 0 > /sys/class/leds/$led1/brightness
+	echo 1 > /sys/class/leds/$led2/brightness
+	sleep 0.2
+	i=$((i+1))
+done
+

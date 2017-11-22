@@ -1,0 +1,33 @@
+#!/bin/sh
+model=$(awk -F': ' '/machine/ {print tolower($NF)}' /proc/cpuinfo| cut -d- -f2-)
+led=
+if [ "$model" = "v1" ]; then
+	model="6416"
+	led="gl-connect:green:lan"
+elif [ "$model" = "ar150" ]; then
+	led="gl_ar150:lan"
+elif [ "$model" = "ar300m" ]; then
+	led="gl-ar300m:lan"
+elif [ "$model" = "ar300" ]; then
+	led="gl_ar300:wan"
+elif [ "$model" = "domino" ]; then
+	led="domino:green:lan1"
+elif [ "$model" = "mt300n" ]; then
+	led="gl-mt300n:wan"
+elif [ "$model" = "mt300n-v2" ]; then
+	led="gl-mt300n-v2:wan"
+elif [ "$model" = "mt300a" ]; then
+	led="gl-mt300a:wan"
+fi
+
+
+while [ true ]
+do
+	if [ -n "$(ps|grep /usr/sbin/tor|grep grep -v)" ]; then
+		echo 1 > /sys/class/leds/$led/brightness
+	else
+		echo 0 > /sys/class/leds/$led/brightness
+		/etc/init.d/tor restart
+	fi
+	sleep 5
+done

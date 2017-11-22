@@ -1,0 +1,131 @@
+#!/bin/sh /etc/rc.common
+
+START=10
+
+start(){
+
+	#get basic device information
+	ddns=
+	mac=
+	nand=
+	radio=radio0
+	model=$(awk -F': ' '/machine/ {print tolower($NF)}' /proc/cpuinfo| cut -d- -f2-)
+	if [ "$model" = "connect inet v1" ]; then
+		model="iNet"
+		ddns=$(dd if=/dev/mtd0 bs=1 skip=$((0x1fc10)) count=7 2>/dev/null)
+	elif [ "$model" = "ar150" -o "$model" = "ar300" -o "$model" = "ar300m" -o "$model" = "mifi" ]; then
+		nand=$(cat /proc/mounts |grep 'ubi0_1.*overlay')
+		art_mtd=$(cat /proc/mtd | awk -F: '/art/{print $1}')
+		ddns=$(dd if=/dev/$art_mtd bs=1 skip=$((0x10)) count=7 2>/dev/null)
+	elif [ "$model" = "mt300a" -o "$model" = "mt300n" -o "$model" = "mt750" ]; then
+		ddns=$(dd if=/dev/mtd2 bs=1 skip=$((0x4010)) count=7 2>/dev/null)
+	elif [ "$model" = "mt300n-v2" ]; then
+		ddns=$(dd if=/dev/mtd2 bs=1 skip=$((0x4010)) count=7 2>/dev/null)
+		radio="mt7628"
+	fi
+
+	#upper case all model
+	if [ "$model" != "iNet" ]; then
+		model=$(echo $model | awk '{ print toupper($1); }')
+	fi
+
+	#new ssid format
+	ssid_prefix="GL-"${model}
+	ssid=${ssid_prefix}
+
+	#we need to check if any settings is reserved from firmware update
+
+	old_ssid=$(uci get wireless.@wifi-iface[0].ssid 2>/dev/null)
+	old_mode=$(uci get wireless.@wifi-iface[0].mode 2>/dev/null)
+
+	#set the default wireless config, only if not reserved config when update firmware
+	if [ "$old_mode" = "ap" -a "$old_ssid" != "PORTAL" ]
+	then
+
+		uci set wireless.${radio}.hwmode='11ng'
+		uci delete wireless.${radio}.disabled
+		uci set wireless.@wifi-iface[0].ssid=PORTAL
+		uci set wireless.@wifi-iface[0].encryption=psk-mixed
+		uci set wireless.@wifi-iface[0].key=goodlife
+		uci set wireless.@wifi-iface[0].ifname=wlan0
+		uci set wireless.@wifi-iface[0].wds=1
+
+		case "$model" in
+			"AR300")
+				uci set wireless.${radio}.txpower='20'
+				;;
+			"AR300M")
+				uci set wireless.${radio}.txpower='20'
+				;;
+			"AR150" |\
+			"iNet")
+				uci set wireless.${radio}.txpower='18'
+				;;
+			"MT300A" |\
+			"MT300N")
+				uci set wireless.${radio}.txpower='20'
+				;;
+			"MT750")
+				uci set wireless.${radio}.txpower='20'
+				old_ssid_5g=$(uci get wireless.@wifi-iface[1].ssid 2>/dev/null)
+				old_mode_5g=$(uci get wireless.@wifi-iface[1].mode 2>/dev/null)
+				if [ "$old_mode_5g" = "ap" -a \( -z "$old_ssid_5g" -o "$old_ssid_5g" = "GL-5G" -o "$old_ssid_5g" = $ssid_prefix \) ]
+				then
+					uci set wireless.@wifi-iface[1].ssid=${ssid}-5G
+					uci set wireless.@wifi-iface[1].encryption=psk-mixed
+					uci set wireless.@wifi-iface[1].key=goodlife
+				fi
+				;;
+			*)
+		esac
+	fi
+	uci commit wireless
+
+	#some settings are not reserved after update firmware, must do the action again
+	case "$model" in
+		"AR300M")
+			if [ -n "$nand" ]; then
+				sed -i 's/ar71xx/ar71xx_nand/g' /etc/opkg/distfeeds.conf
+			fi
+			;;
+		"MT300A" |\
+		"MT300N")
+			rmmod mt7610e
+			rm /etc/modules.d/*mt7610e
+			;;
+		"MT750")
+			cp /etc/banner-mt750 /etc/banner
+			;;
+		*)
+	esac
+
+	uci set network.lan.hostname="$ssid"
+	old_wanhost=$(uci get network.wan.hostname)
+	old_lanip=$(uci get network.lan.ipaddr)
+	if [ -z "$old_wanhost" ]; then
+		if [ "$old_wanhost" = $ssid_prefix -o -z "$old_wanhost" ]; then
+			uci set network.wan.hostname="$ssid"
+		fi
+		uci set system.@system[0].hostname="$ssid_prefix"
+		uci commit system
+		uci set samba.@samba[0].name="$ssid_prefix"
+		uci set samba.@samba[0].description="$ssid"
+		uci commit samba
+		if [ "$old_lanip" = "192.168.1.1" ]; then
+			uci set network.lan.ipaddr="192.168.8.1"
+		fi
+		uci commit network
+	fi
+
+	grep "sleep.*gl_health" /etc/rc.local
+	if [ $? -ne 0 ]; then
+		cp /rom/etc/rc.local /etc/
+	fi
+
+	#run only once
+	/etc/init.d/ssid disable
+	sync
+
+}
+
+

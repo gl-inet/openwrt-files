@@ -3,6 +3,7 @@
 #used for MT300A, AR300M switch, left released
 
 echo "$BUTTON ${ACTION}" > /dev/console
+"${ACTION}" = "pressed"
 
 is_left(){
 	model=$(awk 'BEGIN{FS="-"} /machine/ {print tolower($2)}' /proc/cpuinfo)
