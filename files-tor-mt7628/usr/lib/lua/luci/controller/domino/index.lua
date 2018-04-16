@@ -904,7 +904,7 @@ function network_get()
 		device = uci:get("network","wan","ifname")
 	end
 
-	local radio_diabled=uci:get("wireless","radio0","disabled")
+	local radio_diabled=uci:get("wireless","mt7628","disabled")
 --	local ap_disabled=uci:get("wireless",ap_name,"disabled")
 	local ap_openwrt_enabled=true
 	local ap_tor_enabled=true
@@ -971,8 +971,8 @@ function join_wifi(uci,ssid, encryption, password)
 	if ssid and encryption then
 		uci:section("wireless","wifi-iface","sta")
 		uci:set("wireless","sta","mode","sta")
-		uci:set("wireless","sta","device","radio0")
-		uci:set("wireless", "radio0", "channel", "auto")
+		uci:set("wireless","sta","device","mt7628")
+		uci:set("wireless", "mt7628", "channel", "auto")
 		--set_first(uci, "wireless", "wifi-iface", "mode", "sta")
 		--set_first(uci, "domino", "wifi-iface", "mode", "sta")
 
@@ -987,7 +987,7 @@ function join_wifi(uci,ssid, encryption, password)
 		end
 
 		uci:set("wireless","sta","network","wan")
-		uci:set("wireless","sta","ifname","wlan-sta")
+		uci:set("wireless","sta","ifname","apcli0")
 		uci:set("wireless","sta","disabled","0")
 		uci:delete("network","wan","ifname")
 		uci:set("network","wan","proto","dhcp")
@@ -1362,7 +1362,7 @@ end
 
 function wifi_detect()
   local sys = require("luci.sys")
-  local iw = sys.wifi.getiwinfo("radio0")
+  local iw = sys.wifi.getiwinfo("mt7628")
   local wifis = iw.scanlist
   local result = {}
   for idx, wifi in ipairs(wifis) do
