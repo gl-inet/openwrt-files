@@ -518,6 +518,7 @@ document.body.onload = function() {
   }
 
   var detected_wifis = document.getElementById("detected_wifis");
+  var wifi_list;
   if (detected_wifis) {
     var detect_wifi_networks = function() {
       var detected_wifis = $("#detected_wifis");
@@ -527,10 +528,11 @@ document.body.onload = function() {
       detected_wifis.empty();
       detected_wifis.append("<option>Detecting ...</option>");
       $.get(refresh_wifi_url, function(wifis) {
+		wifi_list=wifis;
         detected_wifis.empty();
         detected_wifis.append("<option>Select a wifi network...</option>");
         for (var idx = 0; idx < wifis.length; idx++) {
-          var html = "<option value=\"" + wifis[idx].name + "|||" + wifis[idx].encryption + "\">" + wifis[idx].name + " (";
+          var html = "<option value=\"" + wifis[idx].name + "|||" + wifis[idx].encryption +"|||" +wifis[idx].channel + "\">" + wifis[idx].name + " (";
           if (wifis[idx].encryption !== "none") {
             html = html + wifis[idx].pretty_encryption + ", ";
           }
@@ -545,10 +547,11 @@ document.body.onload = function() {
 
     detected_wifis.onchange = function() {
       var parts = $("#detected_wifis").val().split("|||");
-      if (parts.length !== 2) {
+      if (parts.length !== 3) {
         return;
       }
       $("#wifi_ssid").val(parts[0]);
+      $("#wifi_channel").val(parts[2]);
       var $wifi_encryption = $("#wifi_encryption");
       $wifi_encryption.val(parts[1]);
       $wifi_encryption.change();

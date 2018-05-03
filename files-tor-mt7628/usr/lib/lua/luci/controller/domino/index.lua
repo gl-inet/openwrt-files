@@ -966,13 +966,13 @@ function network_get()
 	luci.template.render("domino/network", ctx)
 end
 
-function join_wifi(uci,ssid, encryption, password)
+function join_wifi(uci,ssid, encryption, password,channel)
 	--local uci = luci.model.uci.cursor()
 	if ssid and encryption then
 		uci:section("wireless","wifi-iface","sta")
 		uci:set("wireless","sta","mode","sta")
 		uci:set("wireless","sta","device","mt7628")
-		uci:set("wireless", "mt7628", "channel", "auto")
+		uci:set("wireless", "mt7628", "channel", channel)
 		--set_first(uci, "wireless", "wifi-iface", "mode", "sta")
 		--set_first(uci, "domino", "wifi-iface", "mode", "sta")
 
@@ -1099,11 +1099,12 @@ function network_post()
 	elseif wan_protocol=="wifi" then
 		local ssid=param("wifi_ssid")
 		local encryption=param("wifi_encryption")
+		local channel=param("wifi_channel")
 		local password
 		if not_nil_or_empty(param("wifi_password")) then
 			password=param("wifi_password")
 		end
-		join_wifi(uci,ssid, encryption, password)
+		join_wifi(uci,ssid, encryption, password, channel)
 	elseif wan_protocol=="usb" then
 		uci:set("network","wan","proto","dhcp");
 		uci:set("network","wan","ifname",param("phone"))
@@ -1172,9 +1173,10 @@ function network_post()
 	uci:commit("domino")
 
 	luci.util.exec("/etc/init.d/network restart");
+	luci.util.exec("/etc/init.d/tor restart");
+
 	if lan_ip_changed then
 		luci.util.exec("/etc/init.d/dnsmasq restart");
-		luci.util.exec("/etc/init.d/tor restart");
 	end
 
 	network_get()
@@ -1368,6 +1370,7 @@ function wifi_detect()
   for idx, wifi in ipairs(wifis) do
     if not_nil_or_empty(wifi.ssid) then
       local name = wifi.ssid
+      local channel = wifi.channel
       local encryption = "none"
       local pretty_encryption = "None"
       if wifi.encryption.wep then
@@ -1381,7 +1384,7 @@ function wifi_detect()
         pretty_encryption = "WPA2"
       end
       local signal_strength = math.floor(wifi.quality * 100 / wifi.quality_max)
-      table.insert(result, { name = name, encryption = encryption, pretty_encryption = pretty_encryption, signal_strength = signal_strength })
+      table.insert(result, { name = name, encryption = encryption, channel = channel, pretty_encryption = pretty_encryption, signal_strength = signal_strength })
     end
   end
 
